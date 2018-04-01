@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+
+		http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+		http://www.springframework.org/schema/mvc
+		http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd
+		http://www.springframework.org/schema/context
+		http://www.springframework.org/schema/context/spring-context-3.2.xsd
+		http://www.springframework.org/schema/aop
+		http://www.springframework.org/schema/aop/spring-aop-3.2.xsd
+		http://www.springframework.org/schema/tx
+		http://www.springframework.org/schema/tx/spring-tx-3.2.xsd ">
+
+
+    <!--web.xml中shiro的filter对应的bean-->
+    <!-- Shiro 的Web过滤器 -->
+    <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+        <property name="securityManager" ref="securityManager" />
+        <!-- loginUrl认证提交地址，如果没有认证将会请求此地址进行认证，请求此地址将由formAuthenticationFilter进行表单认证 -->
+        <property name="loginUrl" value="/jsp/login.jsp" />
+        <!--认证成功统一跳转到first.actio，建议不配置，不配置的话shiro认证成功会自动到上一个请求路径-->
+        <!--<property name="successUrl" value="/first.action"/>-->
+        <!--授权没有此权限会跳转-->
+        <property name="unauthorizedUrl" value="/refuse.jsp" />
+        <!-- 过虑器链定义，从上向下顺序执行，一般将/**放在最下边 -->
+        <property name="filterChainDefinitions">
+            <value>
+                <!--正式开发中URL的配置我们都是注解或者JSP标签授权方法的，XML配置太多-->
+                <!--对静态资源设置匿名访问-->
+                /images/**=anon
+                /js/**=anon
+                /style/**=anon
+                /jsp/show.jsp=anon
+                /jsp/login.jsp=anon
+                /user/login=anon
+                <!--//请求这个地址就会退出-->
+                /user/logout=logout
+                <!--商品查询和编辑需要权限-用注解的方式进行授权>
+                /items/queryItems=perms[item:query]
+                /items/editItems=perms[item:edit]
+                <!-/**=anon 表示所有的url都可以匿名访问，anon是shiro中一个过滤器的简写，关于shiro中的过滤器介绍见-->
+                <!-- authc 是需要认证过的-->
+                <!--配置了anon就不需要任何权限都可以访问了，就是说anon是最高等级，perms[..]低于它-->
+                <!--/items/queryItems=anon-->
+                <!--/items/editItems=anon-->
+                /**=authc
+                <!--/**=anon-->
+            </value>
+        </property>
+    </bean>
+
+    <!--&lt;!&ndash;securityManage&ndash;&gt;-->
+    <!--&lt;!&ndash; 安全管理器 &ndash;&gt;-->
+    <bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+        <!--注入安全管理器，就是你自己的认证逻辑-->
+        <property name="realm" ref="customRealm" />
+        <!--注入缓存管理器-->
+        <property name="cacheManager" ref="cacheManger"/>
+    </bean>
+    <!--缓存管理器-->
+    <bean id="cacheManger" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+        <property name="cacheManagerConfigFile" value="classpath:shiro-ecache.xml"/>
+    </bean>
+    <!--凭证匹配器，对密码加密-->
+    <bean id="credentialsMatcher" class="org.apache.shiro.authc.credential.HashedCredentialsMatcher">
+        <!--md5加密，散列一次-->
+        <property name="hashAlgorithmName" value="md5"/>
+        <property name="hashIterations" value="1"/>
+    </bean>
+    <!--&lt;!&ndash;自定义realm&ndash;&gt;-->
+    <bean id="customRealm" class="com.wtu.shiro.CustomRealm">
+        <!--将凭证匹配器设置到realm中，realm按照凭证匹配器要求进行散列-->
+        <!--<property name="credentialsMatcher" ref="credentialsMatcher"/>-->
+    </bean>
+</beans>
